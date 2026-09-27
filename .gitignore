@@ -1,0 +1,19 @@
+# Node dependencies
+node_modules/
+npm-debug.log*
+
+# Environment variables
+.env
+.env.local
+
+# Build output
+dist/
+build/
+
+# OS metadata
+.DS_Store
+Thumbs.db
+
+# Cache & temporary files
+.cache/
+.chroma/
