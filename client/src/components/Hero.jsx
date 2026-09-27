@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import HeroScene from './HeroScene.jsx';
+import { uploadDocument } from '../api.js';
 
 export default function Hero({ onUploadSuccess, sessionId }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -28,11 +29,7 @@ export default function Hero({ onUploadSuccess, sessionId }) {
     formData.append('sessionId', sessionId);
 
     try {
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
+      const res = await uploadDocument(formData);
       const data = await res.json();
 
       if (!res.ok) {
@@ -74,10 +71,8 @@ export default function Hero({ onUploadSuccess, sessionId }) {
 
   return (
     <section className="relative min-h-[82vh] flex flex-col items-center justify-center py-12 px-6 overflow-hidden">
-      {/* 3D Wireframe Scene Background */}
       <HeroScene />
 
-      {/* Content Layer */}
       <div className="relative z-10 w-full max-w-3xl mx-auto text-center space-y-6 animate-fade-in-up">
         <h1 className="text-3xl sm:text-5xl font-bold tracking-tight text-[#f1f5f9] leading-tight">
           Document Q&A grounded strictly in source context
@@ -86,7 +81,6 @@ export default function Hero({ onUploadSuccess, sessionId }) {
           Upload PDF or TXT files to query facts with exact page-number citations and zero hallucination.
         </p>
 
-        {/* Upload Zone Card */}
         <div
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}

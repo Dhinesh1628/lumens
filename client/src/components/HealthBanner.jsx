@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { Loader2, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
+import { fetchHealth } from '../api.js';
 
 export default function HealthBanner() {
-  const [status, setStatus] = useState('checking'); // 'checking', 'ready', 'cold_start', 'error'
-  const [errorMsg, setErrorMsg] = useState('');
-
+  const [status, setStatus] = useState('checking');
+  
   useEffect(() => {
     let isMounted = true;
     let attempts = 0;
 
     const checkHealth = async () => {
       try {
-        const res = await fetch('/health');
+        const res = await fetchHealth();
         if (res.ok) {
           if (isMounted) setStatus('ready');
         } else {
@@ -23,7 +23,6 @@ export default function HealthBanner() {
           if (attempts > 1) {
             setStatus('cold_start');
           }
-          // Retry every 3 seconds if cold starting
           setTimeout(checkHealth, 3000);
         }
       }
@@ -39,21 +38,12 @@ export default function HealthBanner() {
     <div className="bg-amber-500/10 border-b border-amber-500/20 px-4 py-2.5">
       <div className="max-w-6xl mx-auto flex items-center justify-between text-xs font-medium text-amber-300">
         <div className="flex items-center space-x-2">
-          {status === 'cold_start' || status === 'checking' ? (
-            <>
-              <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
-              <span>
-                {status === 'cold_start'
-                  ? 'Waking up backend server (Render free-tier cold start in progress, please wait ~15-30s)...'
-                  : 'Connecting to Lumen API backend...'}
-              </span>
-            </>
-          ) : (
-            <>
-              <AlertCircle className="w-4 h-4 text-rose-400" />
-              <span>Backend server is offline or unreachable. Check your API server status.</span>
-            </>
-          )}
+          <Loader2 className="w-4 h-4 animate-spin text-amber-400" />
+          <span>
+            {status === 'cold_start'
+              ? 'Waking up backend server (Render free-tier cold start in progress, please wait ~15-30s)...'
+              : 'Connecting to Lumen API backend...'}
+          </span>
         </div>
       </div>
     </div>

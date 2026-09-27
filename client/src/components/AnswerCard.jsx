@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import CitationCard from './CitationCard.jsx';
+import { queryDocument } from '../api.js';
 
 export default function AnswerCard({ sessionId, activeDoc, onResetSession }) {
   const [messages, setMessages] = useState([
@@ -36,12 +37,7 @@ export default function AnswerCard({ sessionId, activeDoc, onResetSession }) {
     setIsSearching(true);
 
     try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, question: userQuery })
-      });
-
+      const res = await queryDocument(sessionId, userQuery);
       const data = await res.json();
 
       if (!res.ok) {
@@ -76,7 +72,6 @@ export default function AnswerCard({ sessionId, activeDoc, onResetSession }) {
 
   return (
     <div className="flex flex-col h-[calc(100vh-80px)] max-w-4xl mx-auto w-full px-6 py-6 font-sans">
-      {/* Active Bar */}
       <div className="flex items-center justify-between pb-4 border-b border-[#212327] mb-6 text-xs text-[#94a3b8]">
         <div className="flex items-center space-x-2">
           <span>Active document:</span>
@@ -91,17 +86,14 @@ export default function AnswerCard({ sessionId, activeDoc, onResetSession }) {
         </button>
       </div>
 
-      {/* Message Thread */}
       <div className="flex-1 overflow-y-auto space-y-6 pr-2">
         {messages.map((msg) => (
           <div key={msg.id} className="space-y-3">
             {msg.role === 'user' ? (
-              /* Question in muted text */
               <div className="text-xs text-[#94a3b8] font-medium">
                 Q: {msg.content}
               </div>
             ) : (
-              /* Answer in full-opacity text inside minimal #16181c card */
               <div className="p-4 rounded-lg bg-[#16181c] border border-[#212327] text-sm text-[#f1f5f9] leading-relaxed space-y-3">
                 <div className="prose prose-invert prose-sm max-w-none">
                   <ReactMarkdown>{msg.content}</ReactMarkdown>
@@ -140,7 +132,6 @@ export default function AnswerCard({ sessionId, activeDoc, onResetSession }) {
         <div ref={messagesEndRef} />
       </div>
 
-      {/* Input Bar */}
       <form onSubmit={handleSubmit} className="pt-4">
         <div className="flex space-x-2">
           <input
