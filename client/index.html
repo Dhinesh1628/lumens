@@ -3,10 +3,60 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Lumen - Grounded RAG Document Q&A</title>
-    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%236366f1' stroke-width='2'><circle cx='12' cy='12' r='10'/><path d='m12 8 4 4-4 4'/><path d='M8 12h8'/></svg>" />
+    <title>Lumen — Grounded RAG Document Q&A</title>
+    <meta
+      name="description"
+      content="Lumen is an open-source, grounded RAG document analysis engine. Upload PDF or TXT files to query facts with exact page-level citations, token-accurate chunking, and zero hallucinations."
+    />
+    <meta name="author" content="Dhinesh" />
+
+    <!-- Open Graph / Social Sharing -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Lumen — Grounded RAG Document Q&A" />
+    <meta
+      property="og:description"
+      content="Deterministic document Q&A engine with per-page PDF parsing, token-accurate chunking, and verifiable source citations."
+    />
+    <meta property="og:image" content="/og-image.png" />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta property="og:image:alt" content="Lumen — Grounded RAG Document Intelligence" />
+
+    <!-- Twitter Cards -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content="Lumen — Grounded RAG Document Q&A" />
+    <meta
+      name="twitter:description"
+      content="Deterministic document Q&A engine with per-page PDF parsing, token-accurate chunking, and verifiable source citations."
+    />
+    <meta name="twitter:image" content="/og-image.png" />
+
+    <!-- Preload Self-Hosted Brand Fonts -->
+    <link
+      rel="preload"
+      href="/fonts/PlusJakartaSans-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/PlusJakartaSans-SemiBold.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      rel="preload"
+      href="/fonts/JetBrainsMono-Regular.woff2"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%235b6cf0' stroke-width='2'><circle cx='12' cy='12' r='10'/><path d='m12 8 4 4-4 4'/><path d='M8 12h8'/></svg>" />
   </head>
-  <body class="bg-slate-950 text-slate-100 antialiased font-sans min-h-screen">
+  <body class="bg-[#0d0e11] text-[#f1f5f9] antialiased font-sans min-h-screen">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>

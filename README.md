@@ -1,15 +1,49 @@
 # Lumen — Grounded Full-Stack RAG Document Q&A
 
-**Lumen** is a full-stack Retrieval-Augmented Generation (RAG) document Q&A application designed for portfolio and technical interview walkthroughs. It allows users to upload PDF and TXT documents, automatically parses per-page text, generates token-accurate chunks, stores embeddings locally, and executes grounded natural-language Q&A with explicit source citations.
+**Lumen** is an open-source, deterministic Retrieval-Augmented Generation (RAG) document intelligence platform. It ingests PDF and plain-text files, extracts per-page text with physical page boundaries, constructs token-accurate semantic chunks, embeds chunks locally using dense vector embeddings, and answers user questions strictly grounded in the document context with verifiable page-level citations.
 
 ---
 
-## Architecture Diagram
+## 1. Problem Statement
+
+Most document Q&A tools and generic LLM wrappers suffer from three critical failures:
+1. **Hallucination under Uncertainty**: When documents lack relevant facts, generic wrappers fabricate believable answers instead of reporting missing evidence.
+2. **Missing Source Traceability**: Flat text dumps erase page numbers, preventing users from validating answers in original contracts, financial filings, and system manuals.
+3. **Context Window Pollution**: Chunking naively by arbitrary character counts or including repetitive paragraphs causes redundant candidates to dilute LLM attention ("Lost in the Middle").
+
+Lumen resolves these issues with deterministic per-page tracking, token-precise chunking (`cl100k_base`), local semantic vector search, Jaccard near-duplicate filtering, and strict negative-constraint prompt engineering.
+
+---
+
+## 2. Key Features
+
+- **Page-Accurate PDF Extraction**: Custom `pagerender` pipeline tracks physical page numbers for every extracted token chunk.
+- **Token-Accurate Chunking**: Powered by `js-tiktoken` (`cl100k_base`) with a target size of ~500 tokens and 50-token semantic overlap.
+- **Local Dense Embeddings**: Employs `Xenova/all-MiniLM-L6-v2` producing 384-dimensional dense vectors locally via ONNX runtime without external API latency or costs.
+- **ChromaDB Vector Store & In-Memory Fallback**: Vector similarity indexing with fallback to cosine vector memory index.
+- **Jaccard Deduplication & Diversity Re-Ranking**: Top-8 similarity candidates are filtered for lexical near-duplicates (Jaccard similarity threshold 0.55) and re-ranked for document position diversity down to top-4 chunks.
+- **Grounded Prompting**: Strict guardrails instruct the LLM to admit when facts are absent and provide exact page-level citations.
+- **Clean Engineering UX**: Fast SPA client with live health probing, cold-start handling, and interactive documentation.
+
+---
+
+## 3. Technology Stack
+
+- **Frontend**: React 18, Vite 6, Tailwind CSS v4, Lucide React, React Markdown, Three.js (hero visualizer).
+- **Backend**: Node.js (ESM), Express 4, Multer (file upload validation with 10MB limit and MIME filtering).
+- **Embedding & Tokenization**: `@xenova/transformers` (`all-MiniLM-L6-v2`, 384 dims), `js-tiktoken` (`cl100k_base`).
+- **Parsing**: `pdf-parse` with custom page render hooks, plain-text utf-8 decoder.
+- **Vector Storage**: `chromadb` client with fallback memory store.
+- **LLM Integrations**: Google Gemini (`@langchain/google-genai`), Groq (`@langchain/groq`), OpenAI (`@langchain/openai`).
+
+---
+
+## 4. Architecture Overview
 
 ```
  +------------------------+              +--------------------------+
  |   React + Vite Client  |  POST /upload|    Express API Server    |
- |   Tailwind CSS UI      | -----------> |    (Node.js / ESM)        |
+ |   Tailwind CSS UI      | -----------> |    (Node.js / ESM)       |
  +------------------------+              +--------------------------+
       |               ^                              |
       |               | JSON                         | Per-Page Text Extraction
@@ -42,100 +76,150 @@
 
 ---
 
-## Key Technical Highlights
+## 5. Project Folder Structure
 
-1. **Embedding Dimension Safety**
-   - Centralized configuration (`CONFIG.EMBEDDING_MODEL = 'Xenova/all-MiniLM-L6-v2'`, `CONFIG.EMBEDDING_DIM = 384`).
-   - Dimension validation checks during store initialization to prevent mismatched dimension corruption.
-2. **Page-Accurate PDF Tracking**
-   - Uses `pdf-parse` custom `pagerender` callback to extract text page-by-page.
-   - Every chunk retains metadata (`{ filename, pageNumber, chunkIndex, tokenCount }`).
-3. **Token-Accurate Chunking**
-   - Powered by `js-tiktoken` (`cl100k_base` tokenizer) for exact token boundaries (~500 tokens per chunk, 50 overlap).
-4. **Deduplication & Diversity Re-Ranking**
-   - Retrieves top $k=8$ similarity candidates.
-   - Deduplicates near-duplicate chunks using Jaccard text similarity ($>0.55$).
-   - Re-ranks deduplicated candidates to prioritize source location and page diversity down to top-4 chunks.
-5. **Collection TTL & Hard Cap**
-   - 24-hour collection expiration TTL with periodic background cleanup timers.
-   - Hard cap of 50 active collections with FIFO eviction when exceeded.
-6. **Multer Layer Upload Validation**
-   - Multer middleware configured with 10MB limit and MIME whitelist (`application/pdf`, `text/plain`), failing fast with HTTP 400 before parsing.
-7. **Cold-Start UX & Health Warm-Up**
-   - Server pre-loads embedding models on startup.
-   - `GET /health` endpoint with frontend polling and visible "Waking up server..." status banner for free-tier deployments.
+```
+lumen/
+├── client/
+│   ├── public/
+│   │   ├── fonts/               # Self-hosted brand web fonts
+│   │   ├── favicon.svg          # App icon
+│   │   └── og-image.png         # Social share asset
+│   ├── src/
+│   │   ├── components/          # Header, Hero, AnswerCard, DocsPage, AboutPage, Footer
+│   │   ├── api.js               # Centralized client API service
+│   │   ├── App.jsx              # Main app component & view router
+│   │   ├── main.jsx             # React DOM root entry
+│   │   └── index.css            # Tailwind CSS styling and theme tokens
+│   ├── index.html               # HTML5 shell with meta tags & font preloads
+│   ├── package.json             # Frontend dependencies & scripts
+│   ├── vercel.json              # Client SPA rewrite rules
+│   └── vite.config.js           # Vite development server configuration & proxy
+├── server/
+│   ├── src/
+│   │   ├── config.js            # Environment config & constants
+│   │   ├── embeddings.js        # Xenova transformer embedding generator
+│   │   ├── vectorStore.js       # ChromaDB / memory vector store manager
+│   │   ├── chunker.js           # js-tiktoken page-aware chunker
+│   │   ├── parser.js            # Per-page PDF & TXT parser
+│   │   ├── reranker.js          # Jaccard deduplication & diversity re-ranking
+│   │   ├── llm.js               # Multi-provider LLM caller
+│   │   └── index.js             # Express API application & endpoints
+│   ├── tests/
+│   │   └── run-tests.js         # Backend verification unit tests
+│   ├── .env.example             # Backend environment template
+│   └── package.json             # Server dependencies & scripts
+├── vercel.json                  # Root monorepo deployment config for Vercel
+├── .env.example                 # Root environment template
+├── .gitignore                   # Git ignore rules
+└── README.md                    # Project documentation
+```
 
 ---
 
-## Local Setup & Quick Start
+## 6. Installation Instructions
 
 ### Prerequisites
-- **Node.js**: v18+ installed.
+- Node.js (v18.0.0 or higher)
+- npm (v9.0.0 or higher)
 
-### 1. Clone & Install Dependencies
+### Setup Steps
 ```bash
-# Install Server Dependencies
+# Clone the repository
+git clone https://github.com/Dhinesh1628/lumens.git
+cd lumens
+
+# Install Backend dependencies
 cd server
 npm install
 
-# Install Client Dependencies
+# Install Frontend dependencies
 cd ../client
 npm install
 ```
 
-### 2. Environment Variables Configuration
-Copy `.env.example` in `/server` or set environment variables:
-```bash
+---
+
+## 7. Environment Configuration
+
+Create `.env` inside `server/` with:
+```env
 PORT=5000
 CLIENT_ORIGIN=http://localhost:3000
 LLM_PROVIDER=gemini
 GEMINI_API_KEY=your_gemini_api_key_here
+# Optional alternatives:
+# LLM_PROVIDER=openai
+# OPENAI_API_KEY=your_openai_api_key_here
+# LLM_PROVIDER=groq
+# GROQ_API_KEY=your_groq_api_key_here
 ```
 
-### 3. Run Backend & Frontend
-
-#### Start Backend:
-```bash
-cd server
-npm start
+For the frontend client, set `VITE_API_URL` if hosting backend on an external server:
+```env
+VITE_API_URL=https://your-backend-api.onrender.com
 ```
-*(Pre-loads embedding model during boot and starts on `http://localhost:5000`)*
-
-#### Start Frontend:
-```bash
-cd client
-npm run dev
-```
-*(App will be live on `http://localhost:3000`)*
 
 ---
 
-## Step-by-Step Deployment Instructions
+## 8. Database Setup
 
-### 1. Backend Deployment (Render / Railway)
-1. Push your repository to GitHub.
-2. Create a new **Web Service** on [Render](https://render.com) or [Railway](https://railway.app).
-3. Set Root Directory to `server`.
-4. Build Command: `npm install`
-5. Start Command: `npm start`
-6. Add Environment Variables:
-   - `LLM_PROVIDER`: `gemini` (or `openai` / `groq`)
-   - `GEMINI_API_KEY`: `<Your Key>`
-   - `CLIENT_ORIGIN`: `https://your-lumen-frontend.vercel.app`
-
-### 2. Frontend Deployment (Vercel)
-1. Import repository to [Vercel](https://vercel.com).
-2. Set Root Directory to `client`.
-3. Framework Preset: **Vite**.
-4. Deploy!
+Lumen utilizes an embedded vector store architecture:
+- By default, it initializes an in-memory vector collection with 384-dimensional cosine similarity indexing.
+- When ChromaDB is running locally (`CHROMA_URL=http://localhost:8000`), it automatically establishes connection with collection TTL cleanup (24-hour expiration) and an active collection hard cap of 50.
+- No separate external database installation or migration scripts are required for development.
 
 ---
 
-## Verification & Test Suite
+## 9. API Endpoint Summary
 
-Run the backend test suite:
+| Method | Endpoint | Description | Request Body / Params | Response |
+| :--- | :--- | :--- | :--- | :--- |
+| `GET` | `/health` | Health check & model pre-warm status | None | `{ status: "ok", embeddingModel, embeddingDim, timestamp }` |
+| `POST` | `/api/upload` | Upload & ingest document | `multipart/form-data` with `file`, `sessionId` | `{ success: true, filename, pageCount, chunkCount }` |
+| `POST` | `/api/query` | Grounded Q&A against document | `{ sessionId: string, question: string }` | `{ answer: string, citations: [{ page, chunk, text }] }` |
+
+---
+
+## 10. Testing Instructions
+
+Run the backend verification suite:
 ```bash
 cd server
 npm test
 ```
-Verifies embedding output dimensions (384), page-accurate PDF metadata tracking, token chunking counts, and Jaccard deduplication.
+
+Test validations performed:
+1. **Embedding Dimension Safety**: Validates that Xenova produces 384-dimensional dense vectors.
+2. **Page-Accurate Extraction & Token Chunking**: Validates that multi-page PDFs preserve exact 1-to-1 page number mappings.
+3. **Jaccard Deduplication & Re-Ranking**: Validates filtering of duplicate chunks ($>0.55$ similarity) before LLM context generation.
+
+Frontend build check:
+```bash
+cd client
+npm run build
+```
+
+---
+
+## 11. Deployment Instructions
+
+### Backend (Render / Railway)
+1. Create a Web Service connected to your repository.
+2. Set Root Directory to `server`.
+3. Set Build Command to `npm install` and Start Command to `npm start`.
+4. Configure Environment Variables: `LLM_PROVIDER`, `GEMINI_API_KEY`, `CLIENT_ORIGIN`.
+
+### Frontend (Vercel)
+1. Import repository to Vercel.
+2. Set Framework Preset to **Vite** (root `vercel.json` automatically executes `cd client && npm install && npm run build`).
+3. Add Environment Variable: `VITE_API_URL=https://your-backend.onrender.com`.
+4. Deploy!
+
+---
+
+## 12. Known Limitations
+
+- **OCR for Scanned PDFs**: Ingests text-based PDFs; scanned document image OCR requires external tesseract integration.
+- **Local In-Memory Cache**: Active collections reset upon server restart unless backed by persistent ChromaDB instance.
+- **Free-Tier Render Cold Starts**: Free hosting tier spins down after inactivity; initial request takes ~20 seconds to warm up ONNX embedding weights.
