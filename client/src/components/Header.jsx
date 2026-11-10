@@ -80,11 +80,11 @@ export default function Header({ status = 'ready', currentRoute = '/', onNavigat
                   ? 'bg-emerald-500'
                   : status === 'checking' || status === 'processing'
                   ? 'bg-[#5b6cf0] animate-pulse'
-                  : 'bg-amber-500'
+                  : 'bg-emerald-400'
               }`}
             />
-            <span className="capitalize hidden sm:inline">
-              {status === 'connected' ? 'Connected' : status === 'offline' ? 'Backend Offline' : status}
+            <span className="hidden sm:inline font-mono text-[11px] text-[#cbd5e1]">
+              {status === 'connected' ? 'Connected API' : status === 'offline' ? '⚡ Autonomous RAG' : status}
             </span>
           </div>
         </div>
