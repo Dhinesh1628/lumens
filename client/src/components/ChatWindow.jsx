@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import ReactMarkdown from 'react-markdown';
 import { Send, Bot, User, AlertCircle, Loader2, BookCheck, ShieldAlert, Sparkles } from 'lucide-react';
 import CitationCard from './CitationCard.jsx';
+import { queryDocument } from '../api.js';
 
 export default function ChatWindow({ sessionId, activeDoc, selectedPrompt, onClearSelectedPrompt }) {
   const [messages, setMessages] = useState([
@@ -45,16 +46,15 @@ export default function ChatWindow({ sessionId, activeDoc, selectedPrompt, onCle
     setIsSearching(true);
 
     try {
-      const res = await fetch('/api/query', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ sessionId, question: userQuery })
-      });
-
-      const data = await res.json();
+      const res = await queryDocument(sessionId, userQuery);
+      const isJson = res.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await res.json() : null;
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to generate answer.');
+        const errorMsg = data?.error || (res.status === 404 || res.status === 405
+          ? `Backend API not reached (${res.status}). Ensure the Lumen server is running and configure VITE_API_URL in your Vercel project settings.`
+          : `Server returned error (${res.status}).`);
+        throw new Error(errorMsg);
       }
 
       const botMsg = {

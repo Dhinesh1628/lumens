@@ -76,14 +76,16 @@ export default function Header({ status = 'ready', currentRoute = '/', onNavigat
           <div className="flex items-center space-x-2 text-xs text-[#94a3b8] pl-2 border-l border-[#212327]">
             <span
               className={`w-2 h-2 rounded-full ${
-                status === 'ready'
+                status === 'connected' || status === 'ready'
                   ? 'bg-emerald-500'
-                  : status === 'processing'
+                  : status === 'checking' || status === 'processing'
                   ? 'bg-[#5b6cf0] animate-pulse'
-                  : 'bg-rose-500'
+                  : 'bg-amber-500'
               }`}
             />
-            <span className="capitalize hidden sm:inline">{status}</span>
+            <span className="capitalize hidden sm:inline">
+              {status === 'connected' ? 'Connected' : status === 'offline' ? 'Backend Offline' : status}
+            </span>
           </div>
         </div>
       </div>

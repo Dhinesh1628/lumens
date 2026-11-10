@@ -1,5 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { UploadCloud, FileText, AlertCircle, Loader2, CheckCircle2, ShieldCheck, Sparkles, Layers } from 'lucide-react';
+import { uploadDocument } from '../api.js';
 
 export default function UploadZone({ onUploadSuccess, sessionId }) {
   const [isDragging, setIsDragging] = useState(false);
@@ -37,15 +38,15 @@ export default function UploadZone({ onUploadSuccess, sessionId }) {
         setStatusMessage('Generating 384-dim local embeddings (Xenova)...');
       }, 700);
 
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        body: formData
-      });
-
-      const data = await res.json();
+      const res = await uploadDocument(formData);
+      const isJson = res.headers.get('content-type')?.includes('application/json');
+      const data = isJson ? await res.json() : null;
 
       if (!res.ok) {
-        throw new Error(data.error || 'Failed to process document.');
+        const errorMsg = data?.error || (res.status === 404 || res.status === 405
+          ? `Backend API not reached (${res.status}). Ensure the Lumen server is running and configure VITE_API_URL in your Vercel project settings.`
+          : `Server returned error (${res.status}).`);
+        throw new Error(errorMsg);
       }
 
       setUploadStep(3);

@@ -6,6 +6,7 @@ import AnswerCard from './components/AnswerCard.jsx';
 import DocsPage from './components/DocsPage.jsx';
 import AboutPage from './components/AboutPage.jsx';
 import Footer from './components/Footer.jsx';
+import { fetchHealth } from './api.js';
 
 function getInitialRoute() {
   const path = window.location.pathname;
@@ -20,6 +21,25 @@ export default function App() {
   const [route, setRoute] = useState(getInitialRoute);
   const [sessionId, setSessionId] = useState(`session_${Date.now()}`);
   const [activeDoc, setActiveDoc] = useState(null);
+  const [serverStatus, setServerStatus] = useState('checking'); // 'checking', 'connected', 'offline'
+
+  useEffect(() => {
+    let isMounted = true;
+    fetchHealth()
+      .then((res) => {
+        if (isMounted) {
+          setServerStatus(res.ok ? 'connected' : 'offline');
+        }
+      })
+      .catch(() => {
+        if (isMounted) {
+          setServerStatus('offline');
+        }
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
 
   useEffect(() => {
     const handlePopState = () => {
@@ -56,7 +76,7 @@ export default function App() {
   return (
     <div className="min-h-screen bg-[#0d0e11] text-[#f1f5f9] flex flex-col font-sans selection:bg-[#5b6cf0] selection:text-white">
       <Header 
-        status={activeDoc ? 'ready' : 'ready'} 
+        status={serverStatus} 
         currentRoute={route}
         onNavigate={navigate}
       />
