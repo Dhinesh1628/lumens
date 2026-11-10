@@ -38,7 +38,7 @@ export default function UploadZone({ onUploadSuccess, sessionId }) {
         setStatusMessage('Generating 384-dim local embeddings (Xenova)...');
       }, 700);
 
-      const res = await uploadDocument(formData);
+      const res = await uploadDocument(formData, file);
       const isJson = res.headers.get('content-type')?.includes('application/json');
       const data = isJson ? await res.json() : null;
 
